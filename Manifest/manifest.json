@@ -18,7 +18,7 @@
     "short": "FX Coffee Machine"
   },
   "description": {
-    "short": "FX Coffee Machine is a bot that randomly pairs team members up to build team unity.",
+    "short": "FX Coffee Machine is a bot that randomly pairs team members up.",
     "full": "FX Coffee Machine is a cute little bot that randomly pairs team members up every week to help the team build trust and personal connections."
   },
   "accentColor": "#64A2CC",
