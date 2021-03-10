@@ -118,7 +118,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="ChatWithMatchButtonText" xml:space="preserve">
-    <value>Échanger avec {0} / *Chat with {0}*</value>
+    <value>Échanger avec {0} / Chat with {0}</value>
     <comment>Button text to initiate a chat with the person the user has been matched up with</comment>
   </data>
   <data name="ErrorOccured" xml:space="preserve">
@@ -182,15 +182,15 @@
     <comment>The confirmation reply that is sent when the user pauses all matches</comment>
   </data>
   <data name="PausePairingsButtonText" xml:space="preserve">
-    <value>Mets ta machine à café en veille / *Pause your coffee machine*</value>
+    <value>Mets ta machine à café en veille / Pause your coffee machine</value>
     <comment>Button text to pause pairings</comment>
   </data>
   <data name="ProposeMeetupButtonText" xml:space="preserve">
-    <value>Proposer une rencontre / *Propose meetup*</value>
+    <value>Proposer une rencontre / Propose meetup</value>
     <comment>Button text to propose the meetup with the match of the user</comment>
   </data>
   <data name="ResumePairingsButtonText" xml:space="preserve">
-    <value>Recommencer les jumelages / *Resume matches*</value>
+    <value>Recommencer les jumelages / Resume matches</value>
     <comment>Button text to resume pairings</comment>
   </data>
   <data name="SalutationTitleText" xml:space="preserve">
@@ -198,7 +198,7 @@
     <comment>This is the text for the salutation in the adaptive cards when the bot is installed to a team and also when new users are added to the team</comment>
   </data>
   <data name="TakeATourButtonText" xml:space="preserve">
-    <value>Faire le tour / *Take a tour*</value>
+    <value>Faire le tour / Take a tour</value>
     <comment>The text for the button which launches a tour when clicked</comment>
   </data>
   <data name="UnrecognizedInput" xml:space="preserve">
