@@ -24,7 +24,7 @@
   "accentColor": "#64A2CC",
   "bots": [
     {
-      "botId": "f74a1cea-aecf-432d-9bb3-4aa181020ba2",
+      "botId": "05bf6b54-bd91-4643-86e5-69c260a7b937",
       "scopes": [
         "personal",
         "team"
@@ -38,6 +38,6 @@
     "messageTeamMembers"
   ],
   "validDomains": [
-    "fxcoffeemachinepoc-eyufl62kl5xfu.azurewebsites.net"
+    "fxcoffeemachinepoc3-eyufl62kl5xfu.azurewebsites.net"
   ]
 }
