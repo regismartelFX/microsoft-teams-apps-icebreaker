@@ -150,7 +150,7 @@
     <comment>Part 3 of the install message when the name of the installer is not known</comment>
   </data>
   <data name="MatchUpCardContentPart1" xml:space="preserve">
-    <value>Allô, je suis ta nouvelle machine à café FX. Un robot qui te permet d'échanger avec un collègue différent chaque semaine. Cette semaine, je te propose de discuter avec {2}. / *Hi there, I'm your new FX coffee machine. A bot that pairs you with a new coworker to meet each week. This week, I offer you to chat with {2}.*</value>
+    <value>*You've been matched with {2}.*</value>
     <comment>First part of the match up card main content</comment>
   </data>
   <data name="MatchUpCardContentPart2" xml:space="preserve">
@@ -158,7 +158,7 @@
     <comment>Second part of the match up card main content</comment>
   </data>
   <data name="MatchUpCardMatchedText" xml:space="preserve">
-    <value>Je te propose d'échanger avec {0}. / *You've been matched with {0}.*</value>
+    <value>Je te propose d'échanger avec {0}.</value>
     <comment>The text saying who the user has been matched up with</comment>
   </data>
   <data name="MatchUpCardTitleContent" xml:space="preserve">
@@ -166,19 +166,19 @@
     <comment>The title text for the pairup notification adaptive card</comment>
   </data>
   <data name="MeetupContent" xml:space="preserve">
-    <value>Salut! On dirait que {0} nous a jumelés cette semaine. Ce serait formidable de se retrouver pour un café, un déjeuner ou un appel si tu as le temps. / *Hey there, looks like we've been matched by {0} this week. It'd be great to meet up for a coffee or a lunch or a call if you've got time.*</value>
+    <value>Salut! On dirait que {0} nous a jumelés cette semaine. Ce serait formidable de se retrouver pour un café, un déjeuner ou un appel si tu as le temps. / Hey there, looks like we've been matched by {0} this week. It'd be great to meet up for a coffee or a lunch or a call if you've got time.</value>
     <comment>Content of the Meetup for the propose meeting</comment>
   </data>
   <data name="MeetupTitle" xml:space="preserve">
-    <value>Discute avec {0} / *Chat with {0}*</value>
+    <value>Discute avec {0} / Chat with {0}</value>
     <comment>The title for the Meetup - {0} is the name of the first person that user has been matched with and {1} is the name of the user</comment>
   </data>
   <data name="OptInConfirmation" xml:space="preserve">
-    <value>Re-bienvenue! Vous nous avez manqué. J'ai redémarré vos jumelages. Amusez-vous bien! / *Welcome back! You've been missed. I've restarted your matches. Have fun!*</value>
+    <value>Re-bienvenue! Vous nous avez manqué. J'ai redémarré vos jumelages. Amusez-vous bien! / Welcome back! You've been missed. I've restarted your matches. Have fun!</value>
     <comment>The confirmation reply that is sent when the user resumes the matches</comment>
   </data>
   <data name="OptOutConfirmation" xml:space="preserve">
-    <value>C'est fait. J'ai mis vos jumelages en pause. Vous pouvez les réactiver lorsque vous le souhaitez. / *All set. I've paused your matches. You can turn them back on whenever you like.*</value>
+    <value>C'est fait. J'ai mis vos jumelages en pause. Vous pouvez les réactiver lorsque vous le souhaitez. / All set. I've paused your matches. You can turn them back on whenever you like.</value>
     <comment>The confirmation reply that is sent when the user pauses all matches</comment>
   </data>
   <data name="PausePairingsButtonText" xml:space="preserve">
