@@ -25,6 +25,15 @@
                 "description": "The app name to use for the resources that will be provisioned."
             }
         },
+        "tenantId": {
+            "type": "string",
+            "defaultValue": "[subscription().tenantId]",
+            "minLength": 1,
+            "maxLength": 36,
+            "metadata": {
+                "description": "The ID of the tenant to which the app will be used."
+            }
+        },
         "appDescription": {
             "type": "string",
             "minLength": 1,
@@ -39,6 +48,14 @@
             "defaultValue": "https://raw.githubusercontent.com/OfficeDev/microsoft-teams-icebreaker-app/main/Manifest/color.png",
             "metadata": {
                 "description": "The link to the icon for the bot. It must resolve to a PNG file."
+            }
+        },
+        "DefaultCulture": {
+            "defaultValue": "en-US",
+            "minLength": 1,
+            "type": "String",
+            "metadata": {
+                "description": "Default culture."
             }
         },
         "pairingWeekInterval": {
@@ -172,6 +189,8 @@
         "appServiceName": "[concat(variables('baseResourceName'), '-', uniqueString(resourceGroup().id))]",
         "cosmosDbName":"[concat(variables('baseResourceName'), '-storage-', uniqueString(resourceGroup().id))]",
         "logicAppName":"[concat(variables('baseResourceName'), '-logicapp-', uniqueString(resourceGroup().id))]",
+        "keyVaultName":"[concat('keyvault-', uniqueString(resourceGroup().id))]",
+        "KeyVaultURI" : "[concat('https://', variables('keyVaultName'), '.vault.azure.net')]",
         "appInsightsName": "[variables('baseResourceName')]",
         "appHostingPlanName": "[variables('baseResourceName')]",
         "sharedSkus": [ "Free", "Shared" ],
@@ -182,7 +201,7 @@
         "appServiceBaseDomain": "[concat(variables('appServiceName'), '.azurewebsites.net')]",
         "appServiceBaseUrl": "[concat('https://', variables('appServiceBaseDomain'))]",
         "botMessagingUrl": "[concat(variables('appServiceBaseUrl'), '/api/messages')]",
-        "pairingStartUrl": "[concat(variables('appServiceBaseUrl'), '/api/processnow/', parameters('pairingStartKey'))]",
+        "pairingStartUrl": "[concat(variables('appServiceBaseUrl'), '/api/processnow')]",
         "pairingFrequency": "Week",
         "pairingMinute": 0,
         "manifestAppId": "d55d08d9-bacb-4567-942f-afd85d632dcc"
@@ -251,8 +270,11 @@
             "type": "Microsoft.Web/sites",
             "kind": "app",
             "name": "[variables('appServiceName')]",
-            "apiVersion": "2016-08-01",
+            "apiVersion": "2018-02-01",
             "location": "[parameters('location')]",
+            "identity": {
+                "type": "SystemAssigned"
+            },
             "scale": null,
             "properties": {
                 "enabled": true,
@@ -265,20 +287,8 @@
                             "value": "[parameters('botAppID')]"
                         },
                         {
-                            "name": "MicrosoftAppPassword",
-                            "value": "[parameters('botAppPassword')]"
-                        },
-                        {
-                            "name": "Key",
-                            "value": "[parameters('pairingStartKey')]"
-                        },
-                        {
                             "name": "CosmosDBEndpointUrl",
                             "value": "[reference(concat('Microsoft.DocumentDb/databaseAccounts/', variables('cosmosDbName'))).documentEndpoint]"
-                        },
-                        {
-                            "name": "CosmosDBKey",
-                            "value": "[listKeys(concat('Microsoft.DocumentDB/databaseAccounts/', variables('cosmosDbName')), '2015-04-08').primaryMasterKey]"
                         },
                         {
                             "name": "CosmosDBDatabaseName",
@@ -319,19 +329,33 @@
                         {
                             "name": "WEBSITE_NODE_DEFAULT_VERSION",
                             "value": "8.9.4"
+                        },
+                        {
+                            "name": "KeyVaultURI",
+                            "value": "[variables('KeyVaultURI')]"
+                        },
+                        {
+                            "name": "DefaultCulture",
+                            "value": "[parameters('DefaultCulture')]"
+                        },
+                        {
+                        "name": "AllowedTenants",
+                        "value": "[parameters('tenantId')]"
+                        },
+                        {
+                        "name": "DisableTenantFilter",
+                        "value": "false"
                         }
-                    ]
+                    ],
+                    "ftpsState": "Disabled"
                 },
-                "scmSiteAlsoStopped": "false",
                 "scmType": "ExternalGit",
-                "hostingEnvironmentProfile": null,
                 "clientAffinityEnabled": true,
                 "clientCertEnabled": false,
                 "hostNamesDisabled": false,
                 "containerSize": 0,
                 "dailyMemoryTimeQuota": 0,
-                "cloningInfo": null,
-                "httpsOnly": false
+                "httpsOnly": true
             },
             "dependsOn": [
                 "[concat('Microsoft.Web/serverfarms/', variables('appHostingPlanName'))]"
@@ -424,7 +448,10 @@
                             "type": "Http",
                             "inputs": {
                                 "method": "GET",
-                                "uri": "[variables('pairingStartUrl')]"
+                                "uri": "[variables('pairingStartUrl')]",
+                                "headers": {
+                                    "X-Key": "[parameters('pairingStartKey')]"
+                                }
                             }
                         }
                     },
@@ -446,6 +473,79 @@
                 "Application_Type": "other"
             },
             "dependsOn": []
+        },
+        {
+            "type": "Microsoft.KeyVault/vaults",
+            "name": "[variables('keyVaultName')]",
+            "apiVersion": "2019-09-01",
+            "location": "[parameters('location')]",
+            "properties": {
+                "sku": {
+                    "family": "A",
+                    "name": "Standard"
+                },
+                "tenantId": "[subscription().tenantId]",
+                "enabledForTemplateDeployment": true,
+                "accessPolicies": [
+                    {
+                        "tenantId": "[subscription().tenantId]",
+                        "objectId": "[reference(resourceId('Microsoft.Web/sites', variables('appServiceName')), '2018-11-01', 'Full').identity.principalId]",
+                        "permissions": {
+                            "secrets": [
+                                "get"
+                            ]
+                        }
+                    }
+                ]
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Web/sites/', variables('appServiceName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.KeyVault/vaults/secrets",
+            "name": "[concat(variables('keyVaultName'), '/Key')]",
+            "apiVersion": "2019-09-01",
+            "properties": {
+                "contentType": "text/plain",
+                "value": "[parameters('pairingStartKey')]"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.KeyVault/vaults/secrets",
+            "name": "[concat(variables('keyVaultName'), '/MicrosoftAppPassword')]",
+            "apiVersion": "2019-09-01",
+            "properties": {
+                "contentType": "text/plain",
+                "value": "[parameters('botAppPassword')]"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.KeyVault/vaults/secrets",
+            "name": "[concat(variables('keyVaultName'), '/CosmosDBKey')]",
+            "apiVersion": "2019-09-01",
+            "properties": {
+                "value": "[listKeys(concat('Microsoft.DocumentDB/databaseAccounts/', variables('cosmosDbName')), '2015-04-08').primaryMasterKey]"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]"
+            ]
         }
-    ]
+    ],
+  "outputs": {
+    "appDomain": {
+      "type": "string",
+      "value": "[variables('appServiceBaseDomain')]"
+    },
+    "appServiceName": {
+      "type": "string",
+      "value": "[variables('appServiceName')]"
+    }
+  }
 }

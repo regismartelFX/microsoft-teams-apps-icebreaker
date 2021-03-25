@@ -1,14 +1,15 @@
-//----------------------------------------------------------------------------------------------
 // <copyright file="IcebreakerBotDataProvider.cs" company="Microsoft">
-// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 // </copyright>
-//----------------------------------------------------------------------------------------------
 
 namespace Icebreaker.Helpers
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading.Tasks;
+    using Icebreaker.Interfaces;
     using Microsoft.ApplicationInsights;
     using Microsoft.ApplicationInsights.DataContracts;
     using Microsoft.Azure;
@@ -19,13 +20,14 @@ namespace Icebreaker.Helpers
     /// <summary>
     /// Data provider routines
     /// </summary>
-    public class IcebreakerBotDataProvider
+    public class IcebreakerBotDataProvider : IBotDataProvider
     {
         // Request the minimum throughput by default
         private const int DefaultRequestThroughput = 400;
 
         private readonly TelemetryClient telemetryClient;
         private readonly Lazy<Task> initializeTask;
+        private readonly ISecretsHelper secretsHelper;
         private DocumentClient documentClient;
         private Database database;
         private DocumentCollection teamsCollection;
@@ -35,9 +37,11 @@ namespace Icebreaker.Helpers
         /// Initializes a new instance of the <see cref="IcebreakerBotDataProvider"/> class.
         /// </summary>
         /// <param name="telemetryClient">The telemetry client to use</param>
-        public IcebreakerBotDataProvider(TelemetryClient telemetryClient)
+        /// <param name="secretsHelper">Secrets helper to fetch secrets</param>
+        public IcebreakerBotDataProvider(TelemetryClient telemetryClient, ISecretsHelper secretsHelper)
         {
             this.telemetryClient = telemetryClient;
+            this.secretsHelper = secretsHelper;
             this.initializeTask = new Lazy<Task>(() => this.InitializeAsync());
         }
 
@@ -53,12 +57,12 @@ namespace Icebreaker.Helpers
 
             if (installed)
             {
-                var response = await this.documentClient.UpsertDocumentAsync(this.teamsCollection.SelfLink, team);
+                await this.documentClient.UpsertDocumentAsync(this.teamsCollection.SelfLink, team);
             }
             else
             {
                 var documentUri = UriFactory.CreateDocumentUri(this.database.Id, this.teamsCollection.Id, team.Id);
-                var response = await this.documentClient.DeleteDocumentAsync(documentUri, new RequestOptions { PartitionKey = new PartitionKey(team.Id) });
+                await this.documentClient.DeleteDocumentAsync(documentUri, new RequestOptions { PartitionKey = new PartitionKey(team.Id) });
             }
         }
 
@@ -137,6 +141,51 @@ namespace Icebreaker.Helpers
         }
 
         /// <summary>
+        /// Get the stored information about given users
+        /// </summary>
+        /// <returns>User information</returns>
+        public async Task<Dictionary<string, bool>> GetAllUsersOptInStatusAsync()
+        {
+            await this.EnsureInitializedAsync();
+
+            try
+            {
+                var collectionLink = UriFactory.CreateDocumentCollectionUri(this.database.Id, this.usersCollection.Id);
+                var query = this.documentClient.CreateDocumentQuery<UserInfo>(
+                        collectionLink,
+                        new FeedOptions
+                        {
+                            EnableCrossPartitionQuery = true,
+
+                            // Fetch items in bulk according to DB engine capability
+                            MaxItemCount = -1,
+
+                            // Max partition to query at a time
+                            MaxDegreeOfParallelism = -1,
+                        })
+                    .Select(u => new UserInfo { Id = u.Id, OptedIn = u.OptedIn })
+                    .AsDocumentQuery();
+                var usersOptInStatusLookup = new Dictionary<string, bool>();
+                while (query.HasMoreResults)
+                {
+                    // Note that ExecuteNextAsync can return many records in each call
+                    var responseBatch = await query.ExecuteNextAsync<UserInfo>();
+                    foreach (var userInfo in responseBatch)
+                    {
+                        usersOptInStatusLookup.Add(userInfo.Id, userInfo.OptedIn);
+                    }
+                }
+
+                return usersOptInStatusLookup;
+            }
+            catch (Exception ex)
+            {
+                this.telemetryClient.TrackException(ex.InnerException);
+                return null;
+            }
+        }
+
+        /// <summary>
         /// Set the user info for the given user
         /// </summary>
         /// <param name="tenantId">Tenant id</param>
@@ -153,7 +202,7 @@ namespace Icebreaker.Helpers
                 TenantId = tenantId,
                 UserId = userId,
                 OptedIn = optedIn,
-                ServiceUrl = serviceUrl
+                ServiceUrl = serviceUrl,
             };
             await this.documentClient.UpsertDocumentAsync(this.usersCollection.SelfLink, userInfo);
         }
@@ -167,12 +216,11 @@ namespace Icebreaker.Helpers
             this.telemetryClient.TrackTrace("Initializing data store");
 
             var endpointUrl = CloudConfigurationManager.GetSetting("CosmosDBEndpointUrl");
-            var primaryKey = CloudConfigurationManager.GetSetting("CosmosDBKey");
             var databaseName = CloudConfigurationManager.GetSetting("CosmosDBDatabaseName");
             var teamsCollectionName = CloudConfigurationManager.GetSetting("CosmosCollectionTeams");
             var usersCollectionName = CloudConfigurationManager.GetSetting("CosmosCollectionUsers");
 
-            this.documentClient = new DocumentClient(new Uri(endpointUrl), primaryKey);
+            this.documentClient = new DocumentClient(new Uri(endpointUrl), this.secretsHelper.CosmosDBKey);
 
             var requestOptions = new RequestOptions { OfferThroughput = DefaultRequestThroughput };
             bool useSharedOffer = true;
@@ -208,7 +256,7 @@ namespace Icebreaker.Helpers
             // Get a reference to the Users collection, creating it if needed
             var usersCollectionDefinition = new DocumentCollection
             {
-                Id = usersCollectionName
+                Id = usersCollectionName,
             };
             usersCollectionDefinition.PartitionKey.Paths.Add("/id");
             this.usersCollection = await this.documentClient.CreateDocumentCollectionIfNotExistsAsync(this.database.SelfLink, usersCollectionDefinition, useSharedOffer ? null : requestOptions);
