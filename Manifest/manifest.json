@@ -24,6 +24,7 @@
   "accentColor": "#64A2CC",
   "bots": [
     {
+      "botId": "<bot id>",
       "scopes": [
         "personal",
         "team"
@@ -37,5 +38,6 @@
     "messageTeamMembers"
   ],
   "validDomains": [
+    "<app domain>"
   ]
 }
